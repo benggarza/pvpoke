@@ -841,31 +841,37 @@ function PlayerAI(p, b){
 
 		var networkAction = m.chooseAction(state, reward);
 
+		chargedOneValid = poke.energy >= poke.chargedMoves[0].energy;
+		chargedTwoValid = poke.energy >= poke.chargedMoves[1].energy;
+		switchOneValid = player.getTeam()[1].hp > 0 && player.getTeam()[1].data.dex != poke.data.dex;
+		switchTwoValid = player.getTeam()[2].hp > 0 && player.getTeam()[2].data.dex != poke.data.dex;
+
+
 		switch (networkAction){
 			case 'fast':	// fast: action = new TimelineAction("fast", poke.index, turn, 0, {priority: poke.priority});
 				action = new TimelineAction("fast", poke.index, turn, 0, {priority: poke.priority});
 				break;
 			
 			case 'charged1':	// charged move #1: action = new TimelineAction("charged", poke.index, turns, poke.chargedMoves.indexOf(selectedMove), {shielded: false, buffs: false, priority: poke.priority});
-				if (poke.energy >= poke.chargedMoves[0].energy) {
+				if (chargedOneValid) {
 					action = new TimelineAction("charged", poke.index, turn, 0, {shielded: false, buffs: false, priority: poke.priority});
 				}
 				break;
 
 			case 'charged2':
-				if (poke.energy >= poke.chargedMoves[1].energy) {
+				if (chargedTwoValid) {
 					action = new TimelineAction("charged", poke.index, turn, 1, {shielded: false, buffs: false, priority: poke.priority});
 				}
 				break;
 
 			case 'switch1': // switch: action = new TimelineAction("switch", player.getIndex(), turn, switchChoice, {priority: poke.priority});
-				if (player.getTeam()[1].hp > 0 && player.getTeam()[1].data.dex != poke.data.dex) {
+				if (switchOneValid) {
 					action = new TimelineAction("switch", player.getIndex(), turn, 1, {priority: poke.priority});
 				}
 					break;
 
 			case 'switch2':
-				if (player.getTeam()[2].hp > 0 && player.getTeam()[2].data.dex != poke.data.dex) {
+				if (switchOneValid) {
 					action = new TimelineAction("switch", player.getIndex(), turn, 2, {priority: poke.priority});
 				}
 				break;
@@ -875,10 +881,9 @@ function PlayerAI(p, b){
 		// If we encountered an invalid move, change to do a fast move
 		if (action == null) {
 			action = new TimelineAction("fast", poke.index, turn, 0, {priority: poke.priority});
-			// maybe don't add these events, bc then the data will be unbalanced
-			// or maybe only add a fraction of them
-			// or reward more for using opponent shields or making them faint or winning?
-			if (Math.random() < 0.1){
+			// if the only option is fast move, don't add the event to history
+			// not useful data
+			if (!(chargedOneValid || chargedTwoValid || switchOneValid || switchTwoValid)){
 				m.addEvent(state, reward, 'fast');
 			}
 		} else {
