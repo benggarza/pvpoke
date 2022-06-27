@@ -920,8 +920,9 @@ function PlayerAI(p, b){
 		return action;
 	}
 
+	// make it simpler for the network, never use shields
 	this.decideShield = function(attacker, defender, m){
-		return true;
+		return false;
 	}
 
 	// Given a pokemon and its stored energy, how much potential damage can it deal?
