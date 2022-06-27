@@ -12,7 +12,19 @@ if(! isset($_POST)){
 
 $results = $_POST['results'];
 
-file_put_contents('battleLog.csv', $results, FILE_APPEND);
+if (!($file = fopen('battleLog.csv', "a+"))){
+	$response = [
+		'response' => 400,
+		'message' => 'error creating filestream'
+	];
+}
+if (fwrite($file, $results) === FALSE){
+	$response = [
+		'response' => 400,
+		'message' => 'error writing to file'
+	];
+}
+fclose($file);
 
 $response = ['response' => 'success', 'data' => $results];
 echo json_encode($response);

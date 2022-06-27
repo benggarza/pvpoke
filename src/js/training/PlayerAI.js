@@ -843,8 +843,8 @@ function PlayerAI(p, b){
 
 		chargedOneValid = poke.energy >= poke.chargedMoves[0].energy;
 		chargedTwoValid = poke.energy >= poke.chargedMoves[1].energy;
-		switchOneValid = player.getTeam()[1].hp > 0 && player.getTeam()[1].data.dex != poke.data.dex;
-		switchTwoValid = player.getTeam()[2].hp > 0 && player.getTeam()[2].data.dex != poke.data.dex;
+		switchOneValid = (player.getSwitchTimer() == 0) && (player.getTeam()[1].hp > 0) && (player.getTeam()[1].data.dex != poke.data.dex);
+		switchTwoValid = (player.getSwitchTimer() == 0) && (player.getTeam()[2].hp > 0) && (player.getTeam()[2].data.dex != poke.data.dex);
 
 
 		switch (networkAction){
@@ -881,54 +881,42 @@ function PlayerAI(p, b){
 		// If we encountered an invalid move, change to do a fast move
 		if (action == null) {
 			action = new TimelineAction("fast", poke.index, turn, 0, {priority: poke.priority});
-			// if the only option is fast move, don't add the event to history
-			// not useful data
-			if (!(chargedOneValid || chargedTwoValid || switchOneValid || switchTwoValid)){
-				m.addEvent(state, reward, 'fast');
+			networkAction = 'fast';
+		}
+
+		// if the only option is fast move, don't add the event to history
+		// not useful data
+		if (chargedOneValid || chargedTwoValid || switchOneValid || switchTwoValid){
+			stateDupes = this.duplicateState(state);
+			for (let b = 0; b < 256; b++){
+				// if poke used a charged attack this turn, then the action needs to be changed for the swapped state duplicates
+				if ((networkAction == 'charged1') && (b & 1)){
+					console.log('changing network action to charged2 for swapped state');
+					m.addEvent(stateDupes[b], reward, 'charged2');
+				}
+				else if ((networkAction == 'charged2') && (b & 1)){
+					console.log('changing network action to charged1 for swapped state');
+					m.addEvent(stateDupes[b], reward, 'charged1');
+				}
+				else if ((networkAction == 'switch1') && (b & 2)){
+					console.log('changing network action to switch2 for swapped state');
+					m.addEvent(stateDupes[b], reward, 'switch2');
+				}
+				else if ((networkAction == 'switch2') && (b & 2)){
+					console.log('changing network action to switch1 for swapped state');
+					m.addEvent(stateDupes[b], reward, 'switch1');
+				}
+				else{
+					m.addEvent(state, reward, networkAction);
+				}
 			}
-		} else {
-			m.addEvent(state, reward, networkAction);
 		}
 		//console.log(action);
-
-		////////////////
-		// pieces stolen from decideActionOLD
-		/*
-
-		var opponentPlayer = battle.getPlayers()[opponent.index];
-
-		poke.setBattle(battle);
-		poke.resetMoves();
-
-		// How much potential damage will they have after one more Fast Move?
-		var extraFastMoves = Math.floor((poke.fastMove.cooldown-opponent.cooldown) / (opponent.fastMove.cooldown));
-
-		// if player has enough turns to do a fast move while opponent is still cooling down a fast move
-		if((opponent.cooldown > 0)&&(opponent.cooldown < poke.fastMove.cooldown)){
-			extraFastMoves = Math.max(extraFastMoves, 1);
-		}
-
-		var futureEnergy = opponent.energy + (extraFastMoves * opponent.fastMove.energyGain);
-		var futureDamage = self.calculatePotentialDamage(opponent, poke, futureEnergy);
-
-
-		var switchChoice = self.decideSwitch();
-		*/
-
-
 
 		// at the end of everything?
 		poke.resetMoves(true);
 
 
-		////////////////
-
-		// prepare data
-
-		// pass data to network, get decision and parse to var action
-
-
-		//prevAction = action;
 		return action;
 	}
 
@@ -962,6 +950,10 @@ function PlayerAI(p, b){
 		} else{
 			return Math.max.apply(Math, totalDamage);
 		}
+	}
+
+	this.updateModel = function(){
+		m.update();
 	}
 
 	// state values are normalized here
@@ -1106,6 +1098,73 @@ function PlayerAI(p, b){
 		}
 
 		return state;
+	}
+
+	this.swapStateValues = function(state, re, prefix){
+		let stateKeys = Object.keys(state);
+		let keyMatches = stateKeys.map(key => key.match(re)).filter(key => key);
+		keyMatches.forEach(match => {let keyA = prefix + '1' + match[1];
+										let keyB = prefix + '2' + match[1];
+										let temp = state[keyA];
+										state[keyA] = state[keyB];
+										state[keyB] = temp;});
+	}
+
+	this.duplicateState = function(state){
+		//TODO duplicate state with all combinations of party pokemon orders, charged move orders, opponent party pokemon orders, opponent charged move orders
+		// increases data by 256 times
+		let states = [];
+		let stateKeys = Object.keys(state);
+
+		let pokeChargedre = new RegExp('^p\.charged1(\..*)$');
+		let partyre = new RegExp('^party\.1(\..*)$');
+		let partyChargedre = new RegExp('^party\.1\.charged1(\..*)$');
+		let oppChargedre = new RegExp('^o.charged1(\..*)$');
+		let opartyre = new RegExp('^O.party.1(\..*)$');
+		let opartyChargedre = new RegExp('^O.party.1\.charged1(\..*)$')
+
+
+		// for each permutation of...
+		// assigns each swap option a bit for a total of 8 bits
+		for (let bitOptions = 0; bitOptions < 256; bitOptions++){
+			let stateDup = {}
+			Object.assign(stateDup, state);
+			// lead charged moves
+			if (bitOptions  & 1){
+				this.swapStateValues(stateDup, pokeChargedre, 'p.charged');
+			}
+			// party pokemon
+			if (bitOptions & 2){
+				this.swapStateValues(stateDup, partyre, 'party.')
+			}
+			// party pokemon 1 charged moves
+			if (bitOptions & 4){
+				this.swapStateValues(stateDup, partyChargedre, 'party.1.charged');
+			}
+			// party pokemon 2 charged moves
+			if (bitOptions & 8){
+				this.swapStateValues(stateDup, partyChargedre, 'party.2.charged');
+			}
+			// opponent lead charged moves
+			if (bitOptions & 16){
+				this.swapStateValues(stateDup, oppChargedre, 'o.charged');
+			}
+			// opponent party pokemon
+			if (bitOptions & 32){
+				this.swapStateValues(stateDup, opartyre, 'O.party.');
+			}
+			// opponent party pokemon 1 charged moves
+			if (bitOptions & 64){
+				this.swapStateValues(stateDup, opartyChargedre, 'O.party.1.charged');
+			}
+			// opponent party pokemon 2 charged moves
+			if (bitOptions & 128){
+				this.swapStateValues(stateDup, opartyChargedre, 'O.party.2.charged');
+			}
+			states.push(stateDup);
+		}
+
+		return states;
 	}
 
 }

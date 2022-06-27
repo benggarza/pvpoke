@@ -78,10 +78,6 @@ function PlayerModel(b, hiddenLayerSizesOrModel, numStates, numActions, batchSiz
         // format yBatch
         for (const policy of yBatch) {
             formattedYBatch.push(this.formatPolicy(policy));
-            console.log('\n');
-            console.log(policy);
-            console.log(this.formatPolicy(policy));
-            console.log('\n');
         }
 
         // can make a metrics function here to refactor later
@@ -182,6 +178,7 @@ function PlayerModel(b, hiddenLayerSizesOrModel, numStates, numActions, batchSiz
     this.update = async function(){
         modelXBatch = [];
         modelYBatch = [];
+        console.log("Updating model with " + memory.getLength() + " events");
         let prevEvent = null;
         let event = memory.deQueue();
         while(memory.getLength() > 0) {
