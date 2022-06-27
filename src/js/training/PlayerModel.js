@@ -51,8 +51,11 @@ function PlayerModel(b, hiddenLayerSizesOrModel, numStates, numActions, batchSiz
 
     // format state dictionary into array appropriate for network model
     this.formatState = function(state){
-        // how to enforce order?
-        return Object.values(state);
+        // enforce order by sorting keys
+        sortedKeys = Object.keys(state).sort();
+        formattedState = [];
+        sortedKeys.forEach(key => formattedState.push(state[key]));
+        return formattedState;
     }
 
     // format policy dictionary into array appropriate for network model
