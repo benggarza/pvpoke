@@ -782,7 +782,7 @@ function Battle(){
 				};
 
 				if(players[0].getRemainingPokemon() > 1){
-					phaseTimeout = setTimeout(self.forceSwitch,	13000);
+					phaseTimeout = setTimeout(self.forceSwitch,	2600); // 13000 interval change
 				} else{
 					self.forceSwitch();
 				}
@@ -796,7 +796,7 @@ function Battle(){
 				// AI switch
 				if(phaseProps.actors.indexOf(1) > -1){
 					var switchChoice = players[1].getAI().decideSwitch();
-					var waitTime = 500;
+					var waitTime = 100; // interval change
 
 					if((players[1].getAI().hasStrategy("WAIT_CLOCK"))&&(players[1].getSwitchTimer() > 0)&&(players[1].getRemainingPokemon() > 1)){
 						waitTime = Math.min(players[1].getSwitchTimer() - 1000, 5000);
@@ -950,12 +950,12 @@ function Battle(){
 				self.dispatchUpdate({ countdown: countdown });
 			}
 
-		}, 1000);
+		}, 200); // 1000); interval change
 
 		mainLoopInterval = setInterval(function(){
 			self.step();
 			self.dispatchUpdate();
-		}, 500);
+		}, 100); // 500);  shorten by 5x for speeding up training (interval change)
 	}
 
 	// Isolated function that returns an action a pokemon will perform this turn
@@ -2142,7 +2142,7 @@ function Battle(){
 								moveName: move.name,
 								moveType: move.type
 							});
-						}, 6000);
+						}, 300); // 6000 interval change
 
 						// Execute this move after a set amount of time
 						setTimeout(function(){
@@ -2154,12 +2154,12 @@ function Battle(){
 									players[1].getAI().evaluateMatchup(turns, pokemon[1], pokemon[0], players[0]);
 								}
 							}
-						}, 8000);
+						}, 400); // 8000 interval change
 
 						// Return the game to the neutral phase
 						phaseTimeout = setTimeout(function(){
 							phase = "neutral";
-						}, 10000);
+						}, 2000); // 10000 interval change
 
 					}
 
