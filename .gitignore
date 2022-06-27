@@ -6,3 +6,4 @@ src/js/jsconfig.json
 .DS_Store
 src/data/training/ainetwork/model.json
 src/data/training/ainetwork/model.weights.bin
+src/data/battleLog.csv

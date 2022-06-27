@@ -832,11 +832,12 @@ function Battle(){
 
 				if (players[0].getAI() instanceof PlayerAI) {
 					// send final state and reward to memory
-					let model = players[0].getAI().getModel();
-					state = players[0].getAI().getBattleState(480, pokemon[0], pokemon[1], players[0], players[1]);
-					model.addEvent(state, reward, null);
+					let p = players[0].getAI();
+					let model = p.getModel();
+					state = p.getBattleState(480, pokemon[0], pokemon[1], players[0], players[1]);
+					p.duplicateState(state).forEach(s => model.addEvent(s, reward, null));
 					// update Q tables and train model
-					model.update();
+					p.updateModel();
 				}
 			}
 
