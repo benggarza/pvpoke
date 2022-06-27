@@ -884,32 +884,35 @@ function PlayerAI(p, b){
 			networkAction = 'fast';
 		}
 
-		// if the only option is fast move, don't add the event to history
-		// not useful data
+		// if the only option is fast move, don't add the action to history
+		// still need to add the event for q table updates of the previous event
+		// action is null if trivial
 		if (chargedOneValid || chargedTwoValid || switchOneValid || switchTwoValid){
 			stateDupes = this.duplicateState(state);
 			for (let b = 0; b < 256; b++){
 				// if poke used a charged attack this turn, then the action needs to be changed for the swapped state duplicates
 				if ((networkAction == 'charged1') && (b & 1)){
-					console.log('changing network action to charged2 for swapped state');
+					//console.log('changing network action to charged2 for swapped state');
 					m.addEvent(stateDupes[b], reward, 'charged2');
 				}
 				else if ((networkAction == 'charged2') && (b & 1)){
-					console.log('changing network action to charged1 for swapped state');
+					//console.log('changing network action to charged1 for swapped state');
 					m.addEvent(stateDupes[b], reward, 'charged1');
 				}
 				else if ((networkAction == 'switch1') && (b & 2)){
-					console.log('changing network action to switch2 for swapped state');
+					//console.log('changing network action to switch2 for swapped state');
 					m.addEvent(stateDupes[b], reward, 'switch2');
 				}
 				else if ((networkAction == 'switch2') && (b & 2)){
-					console.log('changing network action to switch1 for swapped state');
+					//console.log('changing network action to switch1 for swapped state');
 					m.addEvent(stateDupes[b], reward, 'switch1');
 				}
 				else{
 					m.addEvent(state, reward, networkAction);
 				}
 			}
+		} else {
+			m.addEvent(state, reward, null);
 		}
 		//console.log(action);
 

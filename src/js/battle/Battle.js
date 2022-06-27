@@ -819,7 +819,7 @@ function Battle(){
 					players[0].getTeam().forEach(pokemon => {margin += pokemon.hp/pokemon.stats.hp;});
 				} else{
 					result = "loss";
-					reward = -50;
+					//reward = -50;
 					players[1].getTeam().forEach(pokemon => {margin -= pokemon.hp/pokemon.stats.hp;});
 				}
 

@@ -39,7 +39,9 @@ function PlayerModel(b, hiddenLayerSizesOrModel, numStates, numActions, batchSiz
                 network.add(tf.layers.dense({
                     units: hiddenLayerSize,
                     activation: 'relu',
-                    inputShape: ((i == 0) ? [numStates] : undefined)
+                    inputShape: ((i == 0) ? [numStates] : undefined),
+                    kernelInitializer: 'heUniform',
+                    biasInitializer: 'heUniform'
                 }));
             });
             network.add(tf.layers.dense({units: numActions, activation: 'linear'}));
@@ -173,7 +175,7 @@ function PlayerModel(b, hiddenLayerSizesOrModel, numStates, numActions, batchSiz
 
     this.updateQ = function(state, action, reward, newState) {
         let eFutureReward = this.policy(newState)[this.bestAction(newState)];
-        // lines are separated to ensure that Q Table for current state is initialized
+        // lines are separated to ensure that Q Table for current state is initialized via eReward()
         let eRewardChange = reward + gamma*eFutureReward - this.eReward(state, action);
         Q[this.formatState(state)][action] += alpha*(eRewardChange);
     }
@@ -181,18 +183,24 @@ function PlayerModel(b, hiddenLayerSizesOrModel, numStates, numActions, batchSiz
     this.update = async function(){
         modelXBatch = [];
         modelYBatch = [];
-        console.log("Updating model with " + memory.getLength() + " events");
         let prevEvent = null;
         let event = memory.deQueue();
         while(memory.getLength() > 0) {
             // Update Q Tables
             prevEvent = event;
             event = memory.deQueue();
-            this.updateQ(prevEvent['state'], prevEvent['action'], event['reward'], event['state']);
 
-            // Build training x set for network model
-            modelXBatch.push(prevEvent['state']);
+            // don't add trivial events for network to train on
+            // otherwise network is encouraged to always choose fast moves
+            if (prevEvent['action'] !== null){
+                this.updateQ(prevEvent['state'], prevEvent['action'], event['reward'], event['state']);
+
+                // Build training x set for network model
+                modelXBatch.push(prevEvent['state']);
+            }
         }
+
+        console.log("Training network on " + modelXBatch.length + "events");
 
         // build training y set in separate loop to ensure Q tables are fully updated
         for (const state of modelXBatch) {
