@@ -881,54 +881,21 @@ function PlayerAI(p, b){
 		// If we encountered an invalid move, change to do a fast move
 		if (action == null) {
 			action = new TimelineAction("fast", poke.index, turn, 0, {priority: poke.priority});
-			// if the only option is fast move, don't add the event to history
-			// not useful data
-			if (!(chargedOneValid || chargedTwoValid || switchOneValid || switchTwoValid)){
-				m.addEvent(state, reward, 'fast');
-			}
-		} else {
-			m.addEvent(state, reward, networkAction);
+			networkAction = 'fast';
+		}
+
+		// if the only option is fast move, don't add the event to history
+		// not useful data
+		if (chargedOneValid || chargedTwoValid || switchOneValid || switchTwoValid){
+			stateDupes = this.duplicateState(state);
+			stateDupes.forEach(state => m.addEvent(state, reward, networkAction));
 		}
 		//console.log(action);
-
-		////////////////
-		// pieces stolen from decideActionOLD
-		/*
-
-		var opponentPlayer = battle.getPlayers()[opponent.index];
-
-		poke.setBattle(battle);
-		poke.resetMoves();
-
-		// How much potential damage will they have after one more Fast Move?
-		var extraFastMoves = Math.floor((poke.fastMove.cooldown-opponent.cooldown) / (opponent.fastMove.cooldown));
-
-		// if player has enough turns to do a fast move while opponent is still cooling down a fast move
-		if((opponent.cooldown > 0)&&(opponent.cooldown < poke.fastMove.cooldown)){
-			extraFastMoves = Math.max(extraFastMoves, 1);
-		}
-
-		var futureEnergy = opponent.energy + (extraFastMoves * opponent.fastMove.energyGain);
-		var futureDamage = self.calculatePotentialDamage(opponent, poke, futureEnergy);
-
-
-		var switchChoice = self.decideSwitch();
-		*/
-
-
 
 		// at the end of everything?
 		poke.resetMoves(true);
 
 
-		////////////////
-
-		// prepare data
-
-		// pass data to network, get decision and parse to var action
-
-
-		//prevAction = action;
 		return action;
 	}
 
@@ -1106,6 +1073,42 @@ function PlayerAI(p, b){
 		}
 
 		return state;
+	}
+
+	this.swapStateValues = function(state, keyA, keyB){
+		console.log("swapping values in " + keyA + " and " + keyB);
+		let temp = state[keyA];
+		state[keyA] = state[keyB];
+		state[keyB] = temp;
+	}
+
+	this.duplicateState = function(state){
+		//TODO duplicate state with all combinations of party pokemon orders, charged move orders, opponent party pokemon orders, opponent charged move orders
+		// increases data by 256 times
+		let states = [state];
+		let stateKeys = Object.keys(state);
+
+		let pokeChargedre = new RegExp('^p\.charged1(\..*)$');
+
+
+		// for each combination of lead charged moves
+		for (let pC = 0; pC < 2; pC++){
+			let stateDup = {};
+			Object.assign(stateDup, state);
+			if (pC !== 0){
+				// an array of regex matches [[*full string*, *capture group*], ['p.charged1.damage', 'damage], ...]
+				let pokeChargedKeys = stateKeys.map(key => key.match(pokeChargedre)).filter(key => key);
+				//console.log(pokeChargedKeys);
+				pokeChargedKeys.forEach(match => this.swapStateValues(stateDup, 'p.charged1' + match[1], 'p.charged2' + match[1]));
+
+				// we don't want a repeat of the original state
+				states.push(stateDup);
+			}
+		}
+
+		console.log("Duplicated one state and now have " + states.length);
+		console.log(states);
+		return states;
 	}
 
 }
