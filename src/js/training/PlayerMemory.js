@@ -9,6 +9,7 @@ function PlayerMemory() {
         var reward = reward;
         var action = action;
         var next = null;
+        var prev = null;
 
         this.getEvent = function(){
             return {'state': state, 'reward': reward, 'action': action};
@@ -18,8 +19,16 @@ function PlayerMemory() {
             return next;
         }
 
+        this.getPrev = function(){
+            return prev;
+        }
+
         this.setNext = function(nextNode) {
             next = nextNode;
+        }
+        
+        this.setPrev = function(prevNode) {
+            prev = prevNode;
         }
     }
 
@@ -34,9 +43,28 @@ function PlayerMemory() {
             frontNode.setNext(null);
             if (length == 1){
                 back = null;
+            } else {
+                front.setPrev(null); // protected from null reference
             }
             length -= 1;
             return frontNode.getEvent();
+        } else {
+            return null;
+        }
+    }
+
+    this.pop = function(){
+        if (length > 0){
+            let backNode = back;
+            back = backNode.getPrev();
+            backNode.setPrev(null);
+            if (length == 1){
+                front = null;
+            } else {
+                back.setNext(null);
+            }
+            length -= 1;
+            return backNode.getEvent();
         } else {
             return null;
         }
@@ -49,6 +77,7 @@ function PlayerMemory() {
             back = newNode;
         } else {
             back.setNext(newNode);
+            newNode.setPrev(back);
             back = newNode;
         }
         length += 1;

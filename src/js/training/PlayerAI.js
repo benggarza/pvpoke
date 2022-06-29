@@ -801,7 +801,7 @@ function PlayerAI(p, b){
 		*/
 		if (opponentPlayer.getRemainingPokemon() < oppPrevRemaining) {
 			console.log("opponent lost a pokemon, reward +5");
-			reward = 5;
+			reward = 10;
 		}
 
 		// one attempt at discouraging null actions - really bad rewards
@@ -814,7 +814,7 @@ function PlayerAI(p, b){
 		// reward for making opponent use shield
 		if (opponentPlayer.getShields() < oppPrevShields){
 			console.log("opponent used a shield, reward +2");
-			reward = 2;
+			reward = 5;
 		}
 
 		playerPrevRemaining = player.getRemainingPokemon();
@@ -888,29 +888,7 @@ function PlayerAI(p, b){
 		// still need to add the event for q table updates of the previous event
 		// action is null if trivial
 		if (chargedOneValid || chargedTwoValid || switchOneValid || switchTwoValid){
-			stateDupes = this.duplicateState(state);
-			for (let b = 0; b < 256; b++){
-				// if poke used a charged attack this turn, then the action needs to be changed for the swapped state duplicates
-				if ((networkAction == 'charged1') && (b & 1)){
-					//console.log('changing network action to charged2 for swapped state');
-					m.addEvent(stateDupes[b], reward, 'charged2');
-				}
-				else if ((networkAction == 'charged2') && (b & 1)){
-					//console.log('changing network action to charged1 for swapped state');
-					m.addEvent(stateDupes[b], reward, 'charged1');
-				}
-				else if ((networkAction == 'switch1') && (b & 2)){
-					//console.log('changing network action to switch2 for swapped state');
-					m.addEvent(stateDupes[b], reward, 'switch2');
-				}
-				else if ((networkAction == 'switch2') && (b & 2)){
-					//console.log('changing network action to switch1 for swapped state');
-					m.addEvent(stateDupes[b], reward, 'switch1');
-				}
-				else{
-					m.addEvent(state, reward, networkAction);
-				}
-			}
+			m.addEvent(state, reward, networkAction);
 		} else {
 			m.addEvent(state, reward, null);
 		}
@@ -1102,73 +1080,6 @@ function PlayerAI(p, b){
 		}
 
 		return state;
-	}
-
-	this.swapStateValues = function(state, re, prefix){
-		let stateKeys = Object.keys(state);
-		let keyMatches = stateKeys.map(key => key.match(re)).filter(key => key);
-		keyMatches.forEach(match => {let keyA = prefix + '1' + match[1];
-										let keyB = prefix + '2' + match[1];
-										let temp = state[keyA];
-										state[keyA] = state[keyB];
-										state[keyB] = temp;});
-	}
-
-	this.duplicateState = function(state){
-		//TODO duplicate state with all combinations of party pokemon orders, charged move orders, opponent party pokemon orders, opponent charged move orders
-		// increases data by 256 times
-		let states = [];
-		let stateKeys = Object.keys(state);
-
-		let pokeChargedre = new RegExp('^p\.charged1(\..*)$');
-		let partyre = new RegExp('^party\.1(\..*)$');
-		let partyChargedre = new RegExp('^party\.1\.charged1(\..*)$');
-		let oppChargedre = new RegExp('^o.charged1(\..*)$');
-		let opartyre = new RegExp('^O.party.1(\..*)$');
-		let opartyChargedre = new RegExp('^O.party.1\.charged1(\..*)$')
-
-
-		// for each permutation of...
-		// assigns each swap option a bit for a total of 8 bits
-		for (let bitOptions = 0; bitOptions < 256; bitOptions++){
-			let stateDup = {}
-			Object.assign(stateDup, state);
-			// lead charged moves
-			if (bitOptions  & 1){
-				this.swapStateValues(stateDup, pokeChargedre, 'p.charged');
-			}
-			// party pokemon
-			if (bitOptions & 2){
-				this.swapStateValues(stateDup, partyre, 'party.')
-			}
-			// party pokemon 1 charged moves
-			if (bitOptions & 4){
-				this.swapStateValues(stateDup, partyChargedre, 'party.1.charged');
-			}
-			// party pokemon 2 charged moves
-			if (bitOptions & 8){
-				this.swapStateValues(stateDup, partyChargedre, 'party.2.charged');
-			}
-			// opponent lead charged moves
-			if (bitOptions & 16){
-				this.swapStateValues(stateDup, oppChargedre, 'o.charged');
-			}
-			// opponent party pokemon
-			if (bitOptions & 32){
-				this.swapStateValues(stateDup, opartyre, 'O.party.');
-			}
-			// opponent party pokemon 1 charged moves
-			if (bitOptions & 64){
-				this.swapStateValues(stateDup, opartyChargedre, 'O.party.1.charged');
-			}
-			// opponent party pokemon 2 charged moves
-			if (bitOptions & 128){
-				this.swapStateValues(stateDup, opartyChargedre, 'O.party.2.charged');
-			}
-			states.push(stateDup);
-		}
-
-		return states;
 	}
 
 }

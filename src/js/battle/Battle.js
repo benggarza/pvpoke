@@ -835,7 +835,7 @@ function Battle(){
 					let p = players[0].getAI();
 					let model = p.getModel();
 					state = p.getBattleState(480, pokemon[0], pokemon[1], players[0], players[1]);
-					p.duplicateState(state).forEach(s => model.addEvent(s, reward, null));
+					model.addEvent(state, reward, null);
 					// update Q tables and train model
 					p.updateModel();
 				}
