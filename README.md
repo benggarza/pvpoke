@@ -1,5 +1,7 @@
 # Deep Q-Learning PVP AI
 
+This project has been abandoned in favor of a better simulation environment in [pogo-simulator](https://github.com/benggarza/pogo-simulator) designed for the sole reason of developing AI models
+
 ## Basic Workflow
 
 1. User sets up a battle managed through TrainingSetupInterface and MatchHandler, through which a new Battle, Player, PlayerAI, and PlayerModel are created. ** previous Q-function and perceptron model are loaded from a json file **
@@ -8,26 +10,6 @@
 4. When battle ends, either by a player running out of pokemon or time limit (240s) reached, Battle pushes final state-action-reward to Memory queue.
 5. Battle calls PlayerModel to update Q-function with data in PlayerMemory queue and then train perceptron network on updated data.
 6. ** Q-function and perceptron model are saved to json file **
-
-## Todo
-
-PlayerAI.js : refine battle state(opponent quantities), check that actions are being queued correctly, filter action decisions to prevent switches to fainted pokemon, include move effectiveness for battle state, opponent guessing system 
-(eventually, replace generateTeam, generateRoster, decideSwitch, and decideShield)
-
-PlayerModel.js : allow for saving network and Q table to server as files, enforce order for game state
-
-Battle.js : adjust time intervals to make emulate() run faster. or add to simulate() to allow full 3v3 battles.
-
-MatchHandler.js : incorporate user choice between AI and manual. allow opponent to use PlayerAI.
-
-## Notes
-
-duplicate data with lead charged moves (x2), party pokemon(x2), party pokemon charged moves(x4), opponent lead charged moves(x2), opponent party pokemon(x2), opponent party pokemon charged moves(x4) swapped for x2^8 (x256) more data points
-each game has up to 480 (122880 with duplicates) state-action-reward data points
-
-Run TrainingAI in parallel with PlayerAI for educated guesses to start? E.g. for 0<eps<0.1 do a random action, for 0.1<eps<0.5 ask TrainingAI for an action, and reduce range as model becomes more trained.
-
-Almost inclined to fix Battle-Player-TrainingAI interactions so TrainingAI is more self contained (chooseAction in particular).
 
 
 What are the roles and responsibilities?:
